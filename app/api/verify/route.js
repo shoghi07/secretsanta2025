@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-const LOCKOUT_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+const LOCKOUT_DURATION_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
 export async function POST(request) {
   try {
