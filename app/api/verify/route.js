@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 
 const LOCKOUT_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
@@ -16,36 +15,34 @@ export async function POST(request) {
       );
     }
 
-    // Read data files
-    const dataDir = path.join(process.cwd(), 'data');
-    const secretsPath = path.join(dataDir, 'secrets.json');
-    const lockoutsPath = path.join(dataDir, 'lockouts.json');
-
-    const secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-    let lockoutsData = JSON.parse(fs.readFileSync(lockoutsPath, 'utf8'));
-
     const currentTime = Date.now();
+    const codeUpper = receiver_code.toUpperCase().trim();
 
     // Check if code is locked
-    if (lockoutsData[receiver_code] !== undefined && lockoutsData[receiver_code] !== null) {
-      const unlockTime = lockoutsData[receiver_code];
-      if (unlockTime > currentTime) {
-        return NextResponse.json(
-          {
-            error: 'locked',
-            unlockTime
-          },
-          { status: 403 }
-        );
-      }
+    const { data: lockout } = await supabase
+      .from('lockouts')
+      .select('unlock_time')
+      .eq('code', codeUpper)
+      .single();
+
+    if (lockout && lockout.unlock_time > currentTime) {
+      return NextResponse.json(
+        {
+          error: 'locked',
+          unlockTime: lockout.unlock_time
+        },
+        { status: 403 }
+      );
     }
 
     // Find member by unique_code
-    const member = secretsData.members.find(
-      (m) => m.unique_code.toLowerCase() === receiver_code.toLowerCase().trim()
-    );
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('*')
+      .ilike('unique_code', codeUpper)
+      .single();
 
-    if (!member) {
+    if (memberError || !member) {
       return NextResponse.json(
         { error: 'invalid_code', message: 'Invalid receiver code.' },
         { status: 404 }
@@ -59,8 +56,11 @@ export async function POST(request) {
     if (normalizedGuess !== normalizedName) {
       // Lock the code for 6 hours
       const unlockTime = currentTime + LOCKOUT_DURATION_MS;
-      lockoutsData[receiver_code.toUpperCase()] = unlockTime;
-      fs.writeFileSync(lockoutsPath, JSON.stringify(lockoutsData, null, 2));
+
+      // Upsert lockout record
+      await supabase
+        .from('lockouts')
+        .upsert({ code: codeUpper, unlock_time: unlockTime });
 
       return NextResponse.json(
         { error: 'wrong_name', unlockTime },

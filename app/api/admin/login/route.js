@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
     try {
@@ -13,29 +12,32 @@ export async function POST(request) {
             );
         }
 
-        const dataDir = path.join(process.cwd(), 'data');
-        const adminPath = path.join(dataDir, 'admin.json');
-        const adminData = JSON.parse(fs.readFileSync(adminPath, 'utf8'));
+        // Query admin from Supabase
+        const { data: admin, error } = await supabase
+            .from('admins')
+            .select('*')
+            .eq('userid', userid)
+            .single();
 
-        if (userid === adminData.admin_user && password === adminData.admin_password) {
-            // Generate a simple session token
-            const token = Buffer.from(`${userid}:${Date.now()}`).toString('base64');
-
-            return NextResponse.json({
-                success: true,
-                token
-            });
+        if (error || !admin || admin.password !== password) {
+            return NextResponse.json(
+                { error: 'Invalid credentials' },
+                { status: 401 }
+            );
         }
 
-        return NextResponse.json(
-            { error: 'Invalid credentials' },
-            { status: 401 }
-        );
+        // Generate simple token (in production, use proper JWT)
+        const token = Buffer.from(`${userid}:${Date.now()}`).toString('base64');
+
+        return NextResponse.json({
+            success: true,
+            token
+        });
 
     } catch (error) {
-        console.error('Auth Error:', error);
+        console.error('Login error:', error);
         return NextResponse.json(
-            { error: 'Authentication failed' },
+            { error: 'Login failed' },
             { status: 500 }
         );
     }

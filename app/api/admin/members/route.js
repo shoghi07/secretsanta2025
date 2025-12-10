@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-
-const dataDir = path.join(process.cwd(), 'data');
-const secretsPath = path.join(dataDir, 'secrets.json');
-const lockoutsPath = path.join(dataDir, 'lockouts.json');
+import { supabase } from '@/lib/supabase';
 
 // GET - Fetch all members
 export async function GET() {
     try {
-        const secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-        return NextResponse.json(secretsData);
+        const { data: members, error } = await supabase
+            .from('members')
+            .select('*')
+            .order('unique_code');
+
+        if (error) {
+            throw error;
+        }
+
+        return NextResponse.json({ members });
     } catch (error) {
         console.error('Error reading members:', error);
         return NextResponse.json(
@@ -32,14 +35,14 @@ export async function POST(request) {
             );
         }
 
-        const secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-
         // Check if code already exists
-        const exists = secretsData.members.some(
-            m => m.unique_code.toLowerCase() === unique_code.toLowerCase()
-        );
+        const { data: existing } = await supabase
+            .from('members')
+            .select('id')
+            .ilike('unique_code', unique_code.toUpperCase())
+            .single();
 
-        if (exists) {
+        if (existing) {
             return NextResponse.json(
                 { error: 'Member code already exists' },
                 { status: 409 }
@@ -47,18 +50,17 @@ export async function POST(request) {
         }
 
         // Add new member
-        secretsData.members.push({
-            unique_code: unique_code.toUpperCase(),
-            member_name,
-            wish_items
-        });
+        const { error } = await supabase
+            .from('members')
+            .insert({
+                unique_code: unique_code.toUpperCase(),
+                member_name,
+                wish_items
+            });
 
-        fs.writeFileSync(secretsPath, JSON.stringify(secretsData, null, 2));
-
-        // Add to lockouts with null (unlocked)
-        const lockoutsData = JSON.parse(fs.readFileSync(lockoutsPath, 'utf8'));
-        lockoutsData[unique_code.toUpperCase()] = null;
-        fs.writeFileSync(lockoutsPath, JSON.stringify(lockoutsData, null, 2));
+        if (error) {
+            throw error;
+        }
 
         return NextResponse.json({ success: true, message: 'Member added successfully' });
 
@@ -83,27 +85,18 @@ export async function PUT(request) {
             );
         }
 
-        const secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-
-        const memberIndex = secretsData.members.findIndex(
-            m => m.unique_code.toLowerCase() === unique_code.toLowerCase()
-        );
-
-        if (memberIndex === -1) {
-            return NextResponse.json(
-                { error: 'Member not found' },
-                { status: 404 }
-            );
-        }
-
         // Update member
-        secretsData.members[memberIndex] = {
-            unique_code: unique_code.toUpperCase(),
-            member_name,
-            wish_items
-        };
+        const { error, count } = await supabase
+            .from('members')
+            .update({
+                member_name,
+                wish_items
+            })
+            .ilike('unique_code', unique_code.toUpperCase());
 
-        fs.writeFileSync(secretsPath, JSON.stringify(secretsData, null, 2));
+        if (error) {
+            throw error;
+        }
 
         return NextResponse.json({ success: true, message: 'Member updated successfully' });
 
@@ -128,27 +121,21 @@ export async function DELETE(request) {
             );
         }
 
-        const secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+        // Delete member
+        const { error } = await supabase
+            .from('members')
+            .delete()
+            .ilike('unique_code', unique_code.toUpperCase());
 
-        const memberIndex = secretsData.members.findIndex(
-            m => m.unique_code.toLowerCase() === unique_code.toLowerCase()
-        );
-
-        if (memberIndex === -1) {
-            return NextResponse.json(
-                { error: 'Member not found' },
-                { status: 404 }
-            );
+        if (error) {
+            throw error;
         }
 
-        // Remove member
-        secretsData.members.splice(memberIndex, 1);
-        fs.writeFileSync(secretsPath, JSON.stringify(secretsData, null, 2));
-
-        // Remove from lockouts
-        const lockoutsData = JSON.parse(fs.readFileSync(lockoutsPath, 'utf8'));
-        delete lockoutsData[unique_code.toUpperCase()];
-        fs.writeFileSync(lockoutsPath, JSON.stringify(lockoutsData, null, 2));
+        // Also remove from lockouts
+        await supabase
+            .from('lockouts')
+            .delete()
+            .eq('code', unique_code.toUpperCase());
 
         return NextResponse.json({ success: true, message: 'Member deleted successfully' });
 
