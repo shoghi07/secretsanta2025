@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Secret Santa 2025
 
-## Getting Started
+A festive Next.js app for Secret Santa gift reveals with admin panel for member management.
 
-First, run the development server:
+## Features
+
+- 🎁 **Secret Santa Reveal** - Users enter their unique code + guess the giver's name to reveal the wishlist
+- 🔐 **Admin Panel** - Manage members, add/edit/delete with secure login
+- ⏰ **Lockout Protection** - 6-hour lockout after incorrect name guess
+- 📱 **Responsive Design** - Works on all devices
+
+## Tech Stack
+
+- Next.js 14 (App Router)
+- Tailwind CSS
+- Local JSON files for data storage
+
+## Local Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploying to Render.com
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 1. Push to GitHub
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <your-github-repo-url>
+git push -u origin main
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Create Render Web Service
 
-## Learn More
+1. Go to [Render Dashboard](https://dashboard.render.com)
+2. Click **New > Web Service**
+3. Connect your GitHub repository
+4. Configure:
+   - **Name**: `secret-santa-2025`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+   - **Instance Type**: Free (or Starter for persistent disk)
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Add Persistent Disk (Required for data persistence)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. In your Render service, go to **Disks**
+2. Add a new disk:
+   - **Name**: `data`
+   - **Mount Path**: `/opt/render/project/src/data`
+   - **Size**: 1 GB
+3. This ensures your JSON files persist across deployments
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Environment Variables (Optional)
 
-## Deploy on Vercel
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment mode | `production` |
+| `PORT` | Server port | `3000` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Admin Access
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **URL**: `/admin`
+- **User ID**: `shoghi07`
+- **Password**: `shoghisanta`
+
+## Project Structure
+
+```
+secret-santa-app/
+├── app/
+│   ├── page.js              # Main reveal page
+│   ├── admin/page.js        # Admin panel
+│   └── api/
+│       ├── verify/route.js  # Verification API
+│       └── admin/           # Admin APIs
+├── data/
+│   ├── secrets.json         # Member data
+│   ├── lockouts.json        # Lockout tracking
+│   └── admin.json           # Admin credentials
+└── public/                  # Static assets
+```
+
+## License
+
+MIT

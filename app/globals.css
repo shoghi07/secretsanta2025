@@ -12,15 +12,108 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Custom animations */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Snowflake animations */
+.snowflake {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 2rem;
+  animation: float 15s linear infinite;
+}
+
+.snowflake:nth-child(1) {
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 12s;
+}
+
+.snowflake-2 {
+  left: 25%;
+  animation-delay: 2s;
+  animation-duration: 18s;
+  font-size: 1.5rem;
+}
+
+.snowflake-3 {
+  left: 50%;
+  animation-delay: 4s;
+  animation-duration: 14s;
+  font-size: 2.5rem;
+  color: rgba(255, 215, 0, 0.5);
+}
+
+.snowflake-4 {
+  left: 75%;
+  animation-delay: 1s;
+  animation-duration: 16s;
+  font-size: 1.8rem;
+}
+
+.snowflake-5 {
+  left: 90%;
+  animation-delay: 3s;
+  animation-duration: 20s;
+  font-size: 1.2rem;
+  color: rgba(255, 215, 0, 0.4);
+}
+
+/* Input focus glow effect */
+input:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+/* Button shimmer effect */
+button:not(:disabled):hover {
+  background-size: 200% auto;
 }
