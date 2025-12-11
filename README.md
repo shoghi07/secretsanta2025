@@ -73,8 +73,7 @@ git push -u origin main
 ## Admin Access
 
 - **URL**: `/admin`
-- **User ID**: `shoghi07`
-- **Password**: `shoghisanta`
+- Credentials stored in Supabase `admins` table
 
 ## Project Structure
 
